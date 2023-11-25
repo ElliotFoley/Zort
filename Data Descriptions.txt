@@ -1,0 +1,5 @@
+1: Medium full, very wrong, no numbers in extensions
+2: Small, very wrong, no numbers in extensions
+3: Large, mostly wrong, numbers in extensions, renameScript breaks, Gen1/ contains sortables, R2 contains unsortables
+4: Medium full, somewhat wrong, numbers in extensions, renameScript breaks
+5: Medium full, very wrong, no numbers in extensions, some unsortable
