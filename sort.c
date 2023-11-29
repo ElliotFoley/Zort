@@ -47,14 +47,15 @@ void printCataPtr(char*** cataPtr){
 	}
 	int i = 0;
 	int j;
-	printf("ORCA1\n");
+	//printf("ORCA1\n");
+	//printf("Category %s:", cataPtr[0][0]);
 	while(cataPtr[i] != NULL){
 		j = 1;
-		printf("ORCA2\n");
-		printf("Category %s:", cataPtr[0][0]);
+		//printf("ORCA2\n");
+		//printf("Category %s:", cataPtr[0][0]);
 		while(cataPtr[i][j] != NULL){
 			printf("%s ", cataPtr[i][j]);
-			i++;
+			j++;													//this was i needs to be j
 		}
 		printf("\n");
 		i++;
@@ -145,7 +146,7 @@ int main(){
 			//printf("orca2, %s\n", fileNames[i]);
 			strncpy(cataPtr[j][0],fileNames[i], ii);
 			cataPtr[j][0][ii] = '\0';
-			printf("orca3, %s\n", cataPtr[0][0]);
+			//printf("orca3, %s\n", cataPtr[0][0]);
 
 			//printf("orca1\n");
 			cataPtr[j][1] = malloc((1+strlen(fileNames[i])) * sizeof(char));
