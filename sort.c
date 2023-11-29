@@ -40,6 +40,27 @@ int isInstPrevCatas(char* c, char*** cataPtr){
 	return 0;
 }
 
+void printCataPtr(char*** cataPtr){
+	if(cataPtr == NULL){
+		printf("cataPtr unintialized\n");
+		return;
+	}
+	int i = 0;
+	int j;
+	printf("ORCA1\n");
+	while(cataPtr[i] != NULL){
+		j = 1;
+		printf("ORCA2\n");
+		printf("Category %s:", cataPtr[0][0]);
+		while(cataPtr[i][j] != NULL){
+			printf("%s ", cataPtr[i][j]);
+			i++;
+		}
+		printf("\n");
+		i++;
+	}
+}
+
 int cataPtrEnd(char*** cataPtr){
 	if(cataPtr == NULL)
 		return 0;
@@ -95,10 +116,12 @@ int main(){
     }
 	char ***cataPtr = NULL;
 	for(int i = 0; i<numFileNames; i++){
+		printCataPtr(cataPtr);
 		//printf("fileNames[0]: %s\n", fileNames[0]);
 		//fflush(stdout);
 		int j = isInstPrevCatas(fileNames[i], cataPtr);
 		if(j!=0){//test it against the others in the category
+			printf("testing against others\n");
 			int ii = 0;
 			while(cataPtr[++ii] != NULL)
 				;
@@ -108,26 +131,33 @@ int main(){
 			strncpy(cataPtr[j][ii], fileNames[i], strlen(fileNames[i]) + 1);
 		}
 		else{//make new category and put it in
+			printf("making new catagory\n");
 			j = cataPtrEnd(cataPtr);
-			cataPtr = realloc(cataPtr, (j + 1) * sizeof(char**));
+			cataPtr = realloc(cataPtr, (j + 2) * sizeof(char**));
 			cataPtr[j] = malloc(3 * sizeof(char*));
+			cataPtr[j+1] = NULL;
 			
 			int ii = 0;
 			while((fileNames[i][ii] >= 'a' && fileNames[i][ii] <= 'z') || (fileNames[i][ii] >= 'A' && fileNames[i][ii] <= 'Z')){
 				ii++;
 			}
-			cataPtr[j][0] = malloc(ii * sizeof(char));
+			cataPtr[j][0] = malloc((ii+1) * sizeof(char));
+			//printf("orca2, %s\n", fileNames[i]);
 			strncpy(cataPtr[j][0],fileNames[i], ii);
+			cataPtr[j][0][ii] = '\0';
+			printf("orca3, %s\n", cataPtr[0][0]);
 
-			
-			cataPtr[j][1] = malloc(strlen(fileNames[i]) * sizeof(char));
+			//printf("orca1\n");
+			cataPtr[j][1] = malloc((1+strlen(fileNames[i])) * sizeof(char));
+			//printf("orca2, %s\n", fileNames[i]);
 			strcpy(cataPtr[j][1],fileNames[i]);
+			//printf("orca3, %s\n", cataPtr[j][1]);
 			
 			cataPtr[j][2] = NULL;
 
 		}
 	}
-	
+	//printCataPtr(cataPtr);
 	
 	
 	//finishing up, cleaning memory
