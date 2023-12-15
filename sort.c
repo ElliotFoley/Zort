@@ -11,33 +11,29 @@ int stringUnsortable(char* c){
 	return regexec( &regex, c, 0, NULL, 0) == 0 ? 0 : 1;
 }
 
-int isInstPrevCatas(char* c, char*** cataPtr){
+int indexOfCata(char* c, char*** cataPtr){
 	if(cataPtr == NULL)
-		return 0;
+		return -1;
 	int i = 0;
-	//printf("c: %s\n", c);
-	//fflush(stdout);
 	char *c_cata = malloc(strlen(c) * sizeof(char)); //don't need to allocate the full thing since we are only storing until the numbers
-	//printf("orca1\n");
 	while((c[i] >= 'a' && c[i] <= 'z') || (c[i] >= 'A' && c[i] <= 'Z')){
 		c_cata[i] = c[i];
 		i++;
 	}
 	c_cata[i] = '\0';
-	//printf("orca2\n");
-	//fflush(stdout);
 	i = -1;
-	int c_strlen = strlen(c_cata);
+	//printf("c_cata: %s\n", c_cata);
+	//int c_strlen = strlen(c_cata);
 	while(cataPtr[++i] != NULL){
-		if(strcmp(*(cataPtr[i]), c_cata)){
+		//printf("testing %s\n", cataPtr[i][0]);
+		if(!strcmp(cataPtr[i][0], c_cata)){
+			//printf("weewooweewoo bad\n");
 			free(c_cata);
 			return i;
 		}
 	}
-	//printf("orca3\n");
-	//fflush(stdout);
 	free(c_cata);
-	return 0;
+	return -1;
 }
 
 void printCataPtr(char*** cataPtr){
@@ -47,19 +43,18 @@ void printCataPtr(char*** cataPtr){
 	}
 	int i = 0;
 	int j;
-	//printf("ORCA1\n");
-	//printf("Category %s:", cataPtr[0][0]);
+	printf("CataPtr is:\n");
 	while(cataPtr[i] != NULL){
 		j = 1;
-		//printf("ORCA2\n");
-		//printf("Category %s:", cataPtr[0][0]);
+		printf("Category %s: ", cataPtr[i][0]);
 		while(cataPtr[i][j] != NULL){
-			printf("%s ", cataPtr[i][j]);
-			j++;													//this was i needs to be j
+			printf("%s, ", cataPtr[i][j]);
+			j++;
 		}
 		printf("\n");
 		i++;
 	}
+	printf("\n\n");
 }
 
 int cataPtrEnd(char*** cataPtr){
@@ -71,13 +66,103 @@ int cataPtrEnd(char*** cataPtr){
 	return i;
 }
 
+int compareFunc(const void * a, const void * b){
+	int ai = 0;
+	int bi = 0;
+	while((*(char **)a)[ai] != '.')
+		ai++;
+	while((*(char **)b)[bi] != '.')
+		bi++;
+	if(ai > bi)
+		return 1;
+	if(bi > ai)
+		return 0;
+	for(int i = 0;i < ai; i++){
+		if((*(char **)a)[i] > (*(char **)b)[i])
+			return 1;
+		if((*(char **)b)[i] > (*(char **)a)[i])
+			return 0;
+	}
+	return 0;
+}
+
+int getIndex(char * a){
+	int i = 0;
+	while((a[i] >= 'a' && a[i] <= 'z') || (a[i] >= 'A' && a[i] <= 'Z'))
+		i++;
+	int ai = i;
+	while(a[ai] != '.')
+		ai++;
+	char* astr = malloc((ai - i + 1) * sizeof(char));
+	memset(astr, '\0', ai - i + 1);
+	strncpy(astr, &(a[i]), ai-i);
+	int ans = atoi(astr);
+	free(astr);
+	return ans;
+}
+
+int getSubIndex(char * a){
+	int i = 0;
+	while((a[i] >= 'a' && a[i] <= 'z') || (a[i] >= 'A' && a[i] <= 'Z'))//Go through category
+		i++;
+	int ai = i;
+	while(a[ai] != '.')//Go through index
+		ai++;
+	if(a[ai+1] > '9' || a[ai+1] < '0')
+		return -1;
+	i = ++ai;
+	while(a[ai] != '.')//Go through index
+		ai++;
+	char* astr = malloc((ai - i + 1) * sizeof(char));
+	memset(astr, '\0', ai - i + 1);
+	strncpy(astr, &(a[i]), ai-i);
+	//printf("index string %s, i: %d, ai %d\n", astr, i, ai);
+	int ans = atoi(astr);
+	free(astr);
+	return ans;
+}
+
+int conflict(char * a, char * b){
+	if(getIndex(a) != getIndex(b))
+		return 0;
+	int aSubIndex = getSubIndex(a);
+	if(aSubIndex == -1)
+		return 1;
+	int bSubIndex = getSubIndex(b);
+	if(bSubIndex == -1 || bSubIndex == aSubIndex)
+		return 1;
+	return 0;
+
+}
+
+int isConfliction(char ** cata){//This assumes the list is sorted
+	int i = 0;
+	int curIndex = -1;
+	int fallback = 0;
+	int conflictions = 0;
+	while(cata[++i] != NULL){
+		int newIndex = getIndex(cata[i]);
+		if(newIndex != curIndex){
+			curIndex = newIndex;
+			fallback = 0;
+			continue;
+		}
+		fallback++;
+		//printf("With index %d, testing %d conflictions behind\n", newIndex, fallback);
+		for(int j = 1; j <= fallback; j++){
+			if(conflict(cata[i], cata[i-j])){
+				fprintf(stderr, "ERROR: %s and %s conflict\n", cata[i], cata[i-j]);
+				conflictions++;
+			}
+		}
+	}
+	return conflictions;
+}
 
 int main(){
 	char dirname[256];
 	
-	printf("Here is a totally normal string: ^[a-zA-Z]{1,10}[0-9]{1,5}(\\.[0-9]{1,5})?\\.[a-zA-Z0-9]+$\n");
 	if(regcomp( &regex, "^[a-zA-Z]{1,10}[0-9]{1,5}(\\.[0-9]{1,5})?\\.[a-zA-Z0-9]+$", REG_EXTENDED)){
-	//if(regcomp( &regex, "[0-9]+\\..*", 0)){
 		printf("Error compiling regex\n");
 		return 1;
 	}
@@ -89,12 +174,10 @@ int main(){
 	currentDir = (struct DIR *) opendir(dirname);
 	//open a directory
 	struct dirent *currentDirent;// = readdir(currentDir);
-	//readdir(currentDir);
 	char** fileNames = NULL;
 	int numFileNames = 0;
 	while ((currentDirent = readdir(currentDir)) != NULL) {
-		//printf("tesing file: %s\n", currentDirent->d_name);
-		if(!strcmp(currentDirent->d_name, "..") || !strcmp(currentDirent->d_name, ".") || currentDirent->d_type == DT_DIR)
+		if(!strcmp(currentDirent->d_name, "..") || !strcmp(currentDirent->d_name, ".") || currentDirent->d_type == DT_DIR)// WARNING OF STRCMP
 			continue;
 		if(stringUnsortable(currentDirent->d_name)){
 			printf("Unsortable entry: %s\n", currentDirent->d_name);
@@ -113,26 +196,22 @@ int main(){
 			exit(2);
 		}
 		strcpy(fileNames[numFileNames - 1], currentDirent->d_name);
-        //printf("Added file to list: %s\n", fileNames[numFileNames - 1]);   
     }
 	char ***cataPtr = NULL;
 	for(int i = 0; i<numFileNames; i++){
-		printCataPtr(cataPtr);
-		//printf("fileNames[0]: %s\n", fileNames[0]);
-		//fflush(stdout);
-		int j = isInstPrevCatas(fileNames[i], cataPtr);
-		if(j!=0){//test it against the others in the category
-			printf("testing against others\n");
+		int j = indexOfCata(fileNames[i], cataPtr);
+		if(j!=-1){//it is in a category
 			int ii = 0;
-			while(cataPtr[++ii] != NULL)
+			while(cataPtr[j][++ii] != NULL)
 				;
-			cataPtr[j] = realloc(cataPtr[j], (ii + 1) * sizeof(char*));
+			//ii is the index of the NULL character
+			cataPtr[j] = realloc(cataPtr[j], (ii + 2) * sizeof(char*));
 			cataPtr[j][ii] = malloc(strlen((fileNames[i]) + 1) * sizeof(char));
 			cataPtr[j][ii+1] = NULL;
-			strncpy(cataPtr[j][ii], fileNames[i], strlen(fileNames[i]) + 1);
+			strcpy(cataPtr[j][ii], fileNames[i]);
 		}
 		else{//make new category and put it in
-			printf("making new catagory\n");
+			//printf("making new catagory\n");
 			j = cataPtrEnd(cataPtr);
 			cataPtr = realloc(cataPtr, (j + 2) * sizeof(char**));
 			cataPtr[j] = malloc(3 * sizeof(char*));
@@ -143,23 +222,35 @@ int main(){
 				ii++;
 			}
 			cataPtr[j][0] = malloc((ii+1) * sizeof(char));
-			//printf("orca2, %s\n", fileNames[i]);
 			strncpy(cataPtr[j][0],fileNames[i], ii);
 			cataPtr[j][0][ii] = '\0';
-			//printf("orca3, %s\n", cataPtr[0][0]);
 
-			//printf("orca1\n");
 			cataPtr[j][1] = malloc((1+strlen(fileNames[i])) * sizeof(char));
-			//printf("orca2, %s\n", fileNames[i]);
 			strcpy(cataPtr[j][1],fileNames[i]);
-			//printf("orca3, %s\n", cataPtr[j][1]);
 			
 			cataPtr[j][2] = NULL;
 
 		}
 	}
-	//printCataPtr(cataPtr);
-	
+
+	//Sorting the list
+	int i = -1;
+	while(cataPtr[++i] != NULL){
+		int ii = 0;
+		while(cataPtr[i][++ii] != NULL)
+			;
+		qsort(&(cataPtr[i][1]), ii-1, sizeof(char *), compareFunc);
+	}
+	printf("Sorted cataPtr\n");
+	printCataPtr(cataPtr);
+
+	//Detection confliction errors	
+	i = -1;
+	int conflictionCounter = 0;
+	while(cataPtr[++i] != NULL){
+		printf("Testing category %s\n", cataPtr[i][0]);
+		conflictionCounter += isConfliction(cataPtr[i]);
+	}
 	
 	//finishing up, cleaning memory
 	closedir(currentDir);
