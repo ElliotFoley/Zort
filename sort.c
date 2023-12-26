@@ -169,7 +169,7 @@ int isConfliction(char ** cata){//This assumes the list is sorted
 	return conflictions;
 }
 
-fixHoles(char *** cata, int i, int j, currentIndex, previousIndex){
+fixHoles(char *** cata, int i, int j, int currentIndex, int previousIndex){
 	char* buffer; 
 }
 
