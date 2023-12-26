@@ -86,6 +86,16 @@ int compareFunc(const void * a, const void * b){
 	return 0;
 }
 
+spaceBeforeIndex(char * a){
+	int i = 0;
+	while((a[i] >= 'a' && a[i] <= 'z') || (a[i] >= 'A' && a[i] <= 'Z'))
+		i++;
+	int ai = i;
+	while(a[ai] != '.')
+		ai++;
+	return ai;
+}
+
 int getIndex(char * a){
 	int i = 0;
 	while((a[i] >= 'a' && a[i] <= 'z') || (a[i] >= 'A' && a[i] <= 'Z'))
@@ -157,6 +167,36 @@ int isConfliction(char ** cata){//This assumes the list is sorted
 		}
 	}
 	return conflictions;
+}
+
+fixHoles(char *** cata, int i, int j, currentIndex, previousIndex){
+	char* buffer; 
+}
+
+int* indexHoles(char *** cata){//This assumes the list is sorted and there are no conflicts 
+	int currentIndex = -1;
+	int previousIndex = -1;
+	int holeCount = 0;
+	int *holes;
+	holes = malloc(sizeof(int));
+	for(int i = 0; cata[i] != NULL; i++){
+		for(int j = 1; cata[i][j] != NULL; j++){
+			if(j == 1){
+				currentIndex = getIndex(cata[i][j]);
+				continue;	
+			}
+			previousIndex = currentIndex;
+			currentIndex = getIndex(cata[i][j]);
+			if(previousIndex + 1 != currentIndex && previousIndex != currentIndex){
+				printf("there is a hole between %s and %s\n", cata[i][j-1], cata[i][j]);
+				holeCount++;
+				holes = realloc(holes ,sizeof(int) * holeCount);
+				holes[holeCount - 1] = currentIndex;
+
+			} 
+		}
+	}
+	return holes;
 }
 
 int main(){
@@ -252,6 +292,11 @@ int main(){
 		conflictionCounter += isConfliction(cataPtr[i]);
 	}
 	
+	if(conflictionCounter == 0){
+		indexHoles(cataPtr);		
+	}	
+
+
 	//finishing up, cleaning memory
 	closedir(currentDir);
 	for(int i = 0; i < numFileNames; i++){
