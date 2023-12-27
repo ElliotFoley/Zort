@@ -173,30 +173,51 @@ int isConfliction(char ** cata){//This assumes the list is sorted
 	char* buffer; 
 }*/
 
-int* indexHoles(char *** cata){//This assumes the list is sorted and there are no conflicts 
+int* indexHoles(char ** cata){//This assumes the list is sorted and there are no conflicts 
 	int currentIndex = -1;
 	int previousIndex = -1;
 	int holeCount = 0;
 	int *holes;
 	holes = malloc(sizeof(int));
-	for(int i = 0; cata[i] != NULL; i++){
-		for(int j = 1; cata[i][j] != NULL; j++){
-			if(j == 1){
-				currentIndex = getIndex(cata[i][j]);
-				continue;	
-			}
-			previousIndex = currentIndex;
-			currentIndex = getIndex(cata[i][j]);
-			if(previousIndex + 1 != currentIndex && previousIndex != currentIndex){
-				printf("there is a hole between %s and %s\n", cata[i][j-1], cata[i][j]);
+	for(int j = 1; cata[j] != NULL; j++){
+		if(j == 1){
+			currentIndex = getIndex(cata[j]);
+			if(currentIndex != 1){
 				holeCount++;
 				holes = realloc(holes ,sizeof(int) * holeCount);
 				holes[holeCount - 1] = currentIndex;
-
-			} 
+			}
+			continue;	
 		}
+		previousIndex = currentIndex;
+		currentIndex = getIndex(cata[j]);
+		if(previousIndex + 1 != currentIndex && previousIndex != currentIndex){
+			printf("there is a hole between %s and %s\n", cata[j-1], cata[j]);
+			holeCount++;
+			holes = realloc(holes ,sizeof(int) * (holeCount + 1));
+			holes[holeCount - 1] = currentIndex;
+		} 
+	}
+	holes[holeCount] = -1;
+	
+	if(holeCount == 0){
+		return NULL;
 	}
 	return holes;
+}
+
+int amountOfEntriesInCata(char ** cata){
+	int i = 0;
+	while(cata[i++] != NULL)
+		;
+	return (i - 2);
+}
+
+int amountOfCatas(char *** cata){
+	int i = 0;
+	while(cata[i++] != NULL)
+		;
+	return (i - 1);
 }
 
 int main(){
@@ -293,7 +314,27 @@ int main(){
 	}
 	
 	if(conflictionCounter == 0){
-		indexHoles(cataPtr);		
+		int amountCatas = amountOfCatas(cataPtr);
+		int **holes;
+		holes = malloc(sizeof(int*) * amountCatas + 1);
+		holes[amountCatas] = NULL;
+		for(int i = 0; cataPtr[i] != NULL; i++){
+			holes[i] = malloc(sizeof(int) * amountOfEntriesInCata(cataPtr[i]));
+			holes[i] = indexHoles(cataPtr[i]);	
+		}
+		for(int i = 0; i < amountCatas; i++){
+			if(holes[i] != NULL){
+				for(int j = 0; holes[i][j] != -1; j++){
+					printf("This is the index of a hole: %d in cata %s\n", holes[i][j], cataPtr[i][0]);
+				}
+			}
+		}
+		
+		for(int i = 0; i < amountCatas; i++){
+			free(holes[i]);
+		}
+		free(holes);
+				
 	}	
 
 
@@ -304,5 +345,6 @@ int main(){
 	}
 	free(fileNames);
 	regfree(&regex);
+
 	return 0;
 }
