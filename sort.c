@@ -220,6 +220,8 @@ int renameFile(char* dir, char* oldFileName, char* newFileName){
 	char oldDirPlusFileName[256];
     strcat(oldDirPlusFileName, dir);
 	strcat(newDirPlusFileName, dir);
+	strcat(oldDirPlusFileName, '/');
+	strcat(newDirPlusFileName, '/');
 	strcat(oldDirPlusFileName, oldFileName);
 	strcat(newDirPlusFileName, newFileName);
 	rename(oldDirPlusFileName,newDirPlusFileName);
