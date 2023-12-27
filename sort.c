@@ -86,7 +86,7 @@ int compareFunc(const void * a, const void * b){
 	return 0;
 }
 
-spaceBeforeIndex(char * a){
+int spaceBeforeIndex(char * a){
 	int i = 0;
 	while((a[i] >= 'a' && a[i] <= 'z') || (a[i] >= 'A' && a[i] <= 'Z'))
 		i++;
@@ -169,9 +169,9 @@ int isConfliction(char ** cata){//This assumes the list is sorted
 	return conflictions;
 }
 
-fixHoles(char *** cata, int i, int j, currentIndex, previousIndex){
+/*fixHoles(char *** cata, int i, int j, currentIndex, previousIndex){
 	char* buffer; 
-}
+}*/
 
 int* indexHoles(char *** cata){//This assumes the list is sorted and there are no conflicts 
 	int currentIndex = -1;
