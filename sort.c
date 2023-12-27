@@ -173,19 +173,17 @@ int isConfliction(char ** cata){//This assumes the list is sorted
 	char* buffer; 
 }*/
 
-int* indexHoles(char ** cata){//This assumes the list is sorted and there are no conflicts 
+int indexHoles(char ** cata){//This assumes the list is sorted and there are no conflicts 
 	int currentIndex = -1;
 	int previousIndex = -1;
 	int holeCount = 0;
-	int *holes;
-	holes = malloc(sizeof(int));
+	int holes = -1;
 	for(int j = 1; cata[j] != NULL; j++){
 		if(j == 1){
 			currentIndex = getIndex(cata[j]);
 			if(currentIndex != 1){
 				holeCount++;
-				holes = realloc(holes ,sizeof(int) * holeCount);
-				holes[holeCount - 1] = currentIndex;
+				holes = currentIndex;
 			}
 			continue;	
 		}
@@ -194,15 +192,12 @@ int* indexHoles(char ** cata){//This assumes the list is sorted and there are no
 		if(previousIndex + 1 != currentIndex && previousIndex != currentIndex){
 			printf("there is a hole between %s and %s\n", cata[j-1], cata[j]);
 			holeCount++;
-			holes = realloc(holes ,sizeof(int) * (holeCount + 1));
-			holes[holeCount - 1] = currentIndex;
+			if(holeCount == 1){
+				holes = currentIndex;
+			}
 		} 
 	}
-	holes[holeCount] = -1;
-	
-	if(holeCount == 0){
-		return NULL;
-	}
+
 	return holes;
 }
 
@@ -315,24 +310,18 @@ int main(){
 	
 	if(conflictionCounter == 0){
 		int amountCatas = amountOfCatas(cataPtr);
-		int **holes;
-		holes = malloc(sizeof(int*) * amountCatas + 1);
-		holes[amountCatas] = NULL;
+		int *holes;
+		holes = malloc(sizeof(int) * amountCatas + 1);
+		holes[amountCatas] = -1;
 		for(int i = 0; cataPtr[i] != NULL; i++){
-			holes[i] = malloc(sizeof(int) * amountOfEntriesInCata(cataPtr[i]));
 			holes[i] = indexHoles(cataPtr[i]);	
 		}
 		for(int i = 0; i < amountCatas; i++){
-			if(holes[i] != NULL){
-				for(int j = 0; holes[i][j] != -1; j++){
-					printf("This is the index of a hole: %d in cata %s\n", holes[i][j], cataPtr[i][0]);
-				}
+			if(holes[i] != -1){
+				printf("This is the index of a hole: %d in cata %s\n", holes[i], cataPtr[i][0]);
 			}
 		}
-		
-		for(int i = 0; i < amountCatas; i++){
-			free(holes[i]);
-		}
+
 		free(holes);
 				
 	}	
