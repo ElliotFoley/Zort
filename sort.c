@@ -215,6 +215,17 @@ int amountOfCatas(char *** cata){
 	return (i - 1);
 }
 
+int renameFile(char* dir, char* oldFileName, char* newFileName){
+	char newDirPlusFileName[256];
+	char oldDirPlusFileName[256];
+    strcat(oldDirPlusFileName, dir);
+	strcat(newDirPlusFileName, dir);
+	strcat(oldDirPlusFileName, oldFileName);
+	strcat(newDirPlusFileName, newFileName);
+	rename(oldDirPlusFileName,newDirPlusFileName);
+}
+
+
 int main(){
 	char dirname[256];
 	
