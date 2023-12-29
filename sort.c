@@ -132,6 +132,26 @@ int getSubIndex(char * a){
 	return ans;
 }
 
+char* getExtension(char * a){
+	int i = 0;
+	int ai = i;
+	while(a[ai] != '.')//Go through index
+		ai++;
+	if(a[ai+1] <= '9' && a[ai+1] >= '0'){
+		ai++;
+		while(a[ai] != '.')//Go through subindex
+			ai++;
+	}
+	i = ++ai;
+	while(a[ai] != '\0')
+		ai++;
+	//printf("getExt seeing string %s\n", &(a[i]));
+	char* astr = malloc((ai - i + 1) * sizeof(char));
+	memset(astr, '\0', ai - i + 1);
+	strncpy(astr, &(a[i]), ai-i);
+	return astr;
+}
+
 int conflict(char * a, char * b){
 	if(getIndex(a) != getIndex(b))
 		return 0;
@@ -169,9 +189,6 @@ int isConfliction(char ** cata){//This assumes the list is sorted
 	return conflictions;
 }
 
-/*fixHoles(char *** cata, int i, int j, currentIndex, previousIndex){
-	char* buffer; 
-}*/
 
 int indexHoles(char ** cata){//This assumes the list is sorted and there are no conflicts 
 	int currentIndex = -1;
@@ -183,9 +200,9 @@ int indexHoles(char ** cata){//This assumes the list is sorted and there are no 
 			currentIndex = getIndex(cata[j]);
 			if(currentIndex != 1){
 				holeCount++;
-				holes = currentIndex;
+				holes = 0;
 			}
-			continue;	
+			continue;
 		}
 		previousIndex = currentIndex;
 		currentIndex = getIndex(cata[j]);
@@ -193,9 +210,9 @@ int indexHoles(char ** cata){//This assumes the list is sorted and there are no 
 			printf("there is a hole between %s and %s\n", cata[j-1], cata[j]);
 			holeCount++;
 			if(holeCount == 1){
-				holes = currentIndex;
+				holes = j - 1;
 			}
-		} 
+		}
 	}
 
 	return holes;
@@ -216,27 +233,89 @@ int amountOfCatas(char *** cata){
 }
 
 int renameFile(char* dir, char* oldFileName, char* newFileName){
-	char newDirPlusFileName[256];
-	char oldDirPlusFileName[256];
-    strcat(oldDirPlusFileName, dir);
-	strcat(newDirPlusFileName, dir);
-	strcat(oldDirPlusFileName, '/');
-	strcat(newDirPlusFileName, '/');
+	char newDirPlusFileName[2048];
+	char oldDirPlusFileName[2048];
+    strcpy(oldDirPlusFileName, dir);
+	strcpy(newDirPlusFileName, dir);
+	strcat(oldDirPlusFileName, "/");
+	strcat(newDirPlusFileName, "/");
 	strcat(oldDirPlusFileName, oldFileName);
 	strcat(newDirPlusFileName, newFileName);
+		
+	printf("command: $ mv %s %s\n", oldDirPlusFileName, newDirPlusFileName);
 	rename(oldDirPlusFileName,newDirPlusFileName);
 }
 
+//Assumes that x is a physically smaller index than what a previously had
 
-int main(){
-	char dirname[256];
+char* changeIndexNumber(char* a, int x, char* cata){
+	//printf("changeIndexNumber sees a: %s\n", a);
+	char index[256];
+	sprintf(index, "%d", x);
+	char subindex[256];
+	sprintf(subindex, "%d", getSubIndex(a));
+	char* extension = getExtension(a);
+	int i = 0;
+	char* b = malloc((strlen(a) + 1) * sizeof(char));
+	strcpy(b, cata);
+	while((b[i] >= 'a' && b[i] <='z') || (b[i] >= 'A' && b[i] <= 'Z'))
+		i++;
+	strcpy(&(b[i]), index);
+	while(b[i] != '\0')
+		i++;
+	b[i++] = '.';
+	if(getSubIndex(a) != -1){
+		strcpy(&(b[i]), subindex);
+		while(b[i] != '\0')
+			i++;
+		b[i++] = '.';
+	}
+	strcpy(&(b[i]), extension);
+	free(extension);
+
+	return b;
+}
+
+void fixHoles(char **cata, int j, char* dir){
+	int targetIndex;
+	if(j != 0)
+		targetIndex = getIndex(cata[j]);
+	int lastIndex = -1;
+	int currentIndex = -1;
+	if(j == 0)
+		targetIndex = 0;
+	for(int i = j + 1; cata[i] != NULL; i++){
+		currentIndex = getIndex(cata[i]);
+		if(lastIndex == currentIndex)//if our current index was the same as the previous element's, don't iterate the targetIndex
+			;
+		else{
+			targetIndex++;
+		}
+		lastIndex = currentIndex;
+		char* newFileName = changeIndexNumber(cata[i], targetIndex, cata[0]);
+		printf("changing %s to new target name: %s with dir = %s\n", cata[i], newFileName, dir);
+		renameFile(dir, cata[i], newFileName);
+		free(newFileName);
+	}
+}
+
+
+int main(int argc, char* argv[]){
+	int noReorder = 0;
+	for(int i = 1; i<argc; i++){
+		if(strcmp(argv[i], "-h") == 0){
+			printf("Read the README mate!\n");
+			return 0;
+		}
+	}
+	char dirname[2048];
 	
 	if(regcomp( &regex, "^[a-zA-Z]{1,10}[0-9]{1,5}(\\.[0-9]{1,5})?\\.[a-zA-Z0-9]+$", REG_EXTENDED)){
 		printf("Error compiling regex\n");
 		return 1;
 	}
-	memset(dirname, 0, 256*sizeof(char)); 
-	getcwd(dirname, 255);
+	memset(dirname, 0, 2048*sizeof(char)); 
+	getcwd(dirname, 2047);
 	//get current working directory c);
 	printf("current directory%s\n", dirname);
 	DIR *currentDir;
@@ -317,26 +396,27 @@ int main(){
 	i = -1;
 	int conflictionCounter = 0;
 	while(cataPtr[++i] != NULL){
-		printf("Testing category %s\n", cataPtr[i][0]);
+		//printf("Testing category %s\n", cataPtr[i][0]);
 		conflictionCounter += isConfliction(cataPtr[i]);
 	}
-	
+
+	//Detecting hole errors
+	int amountCatas = amountOfCatas(cataPtr);
 	if(conflictionCounter == 0){
-		int amountCatas = amountOfCatas(cataPtr);
-		int *holes;
-		holes = malloc(sizeof(int) * amountCatas + 1);
-		holes[amountCatas] = -1;
+		int *holeIndexes;
+		holeIndexes = malloc(sizeof(int) * amountCatas + 1);
+		holeIndexes[amountCatas] = -1;
 		for(int i = 0; cataPtr[i] != NULL; i++){
-			holes[i] = indexHoles(cataPtr[i]);	
+			holeIndexes[i] = indexHoles(cataPtr[i]);	
 		}
 		for(int i = 0; i < amountCatas; i++){
-			if(holes[i] != -1){
-				printf("This is the index of a hole: %d in cata %s\n", holes[i], cataPtr[i][0]);
+			if(holeIndexes[i] != -1){
+				printf("This is the index of a hole: %d in cata %s\n", holeIndexes[i], cataPtr[i][0]);
+				fixHoles(cataPtr[i], holeIndexes[i], dirname);
 			}
 		}
 
-		free(holes);
-				
+		free(holeIndexes);
 	}	
 
 
