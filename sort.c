@@ -132,6 +132,20 @@ int getSubIndex(char * a){
 	return ans;
 }
 
+int amountOfEntriesInCata(char ** cata){
+	int i = 0;
+	while(cata[i++] != NULL)
+		;
+	return (i - 2);
+}
+
+int amountOfCatas(char *** cata){
+	int i = 0;
+	while(cata[i++] != NULL)
+		;
+	return (i - 1);
+}
+
 char* getExtension(char * a){
 	int i = 0;
 	int ai = i;
@@ -218,19 +232,49 @@ int indexHoles(char ** cata){//This assumes the list is sorted and there are no 
 	return holes;
 }
 
-int amountOfEntriesInCata(char ** cata){
-	int i = 0;
-	while(cata[i++] != NULL)
-		;
-	return (i - 2);
+int * subIndexHoles(char ** cata){
+	int currentIndex = -1;
+	int previousIndex = -1;
+	int currentSubIndex = -1;
+	int previousSubIndex = -1;
+	int * holes;
+	int numberOfHoles = 0;
+	int orcaflag = 0;
+	holes = malloc(sizeof(int) * amountOfEntriesInCata(cata) + 1);				//this is more then needed
+
+
+	for(int i = 1; cata[i] != NULL; i++){
+		previousIndex = currentIndex;
+		currentIndex = getIndex(cata[i]);
+		previousSubIndex = currentSubIndex;
+		currentSubIndex = getSubIndex(cata[i]);
+		if(currentIndex == previousIndex && currentSubIndex != previousSubIndex + 1){
+			printf("%s has a subindex that needs to be changed on the index of %d\n", cata[i], i);
+			if(orcaflag == 0){
+				printf("i is %d\n", i); 
+				holes[numberOfHoles] = i - 1;
+				numberOfHoles++;
+				orcaflag = 1;
+			}
+		}
+		else{
+			orcaflag = 0;
+		}
+	}
+	if(numberOfHoles == 0){
+		free(holes);
+		return NULL;
+	}
+	holes[numberOfHoles] = -1;
+	/*int i = 0;
+	while(holes[i] != -1){
+		printf("holes of [%d] is %d which is assioted with this string %s\n", i, holes[i], cata[holes[i]]);
+		i++;
+	}*/
+	return holes;
 }
 
-int amountOfCatas(char *** cata){
-	int i = 0;
-	while(cata[i++] != NULL)
-		;
-	return (i - 1);
-}
+
 
 int renameFile(char* dir, char* oldFileName, char* newFileName){
 	char newDirPlusFileName[2048];
@@ -276,8 +320,37 @@ char* changeIndexNumber(char* a, int x, char* cata){
 	return b;
 }
 
+char* changeSubIndexNumber(char* a, int x, char* cata){
+	char index[256];
+	sprintf(index, "%d", getIndex(a));
+	char subIndex[256];
+	sprintf(subIndex, "%d", x);
+	char* extension = getExtension(a);
+	int i = 0;
+	char* b = malloc((strlen(a) + 1) * sizeof(char));
+	strcpy(b, cata);
+	while((b[i] >= 'a' && b[i] <='z') || (b[i] >= 'A' && b[i] <= 'Z'))
+		i++;
+	strcpy(&(b[i]), index);
+	while(b[i] != '\0')
+		i++;
+	b[i++] = '.';
+	if(getSubIndex(a) != -1){
+		strcpy(&(b[i]), subIndex);
+		while(b[i] != '\0')
+			i++;
+		b[i++] = '.';
+	}
+	strcpy(&(b[i]), extension);
+
+	free(extension);
+	return b;
+}
+
 void fixHoles(char **cata, int j, char* dir){
 	int targetIndex;
+
+	int ii = 0;					//This just stores the index of where NULL should be placed
 	if(j != 0)
 		targetIndex = getIndex(cata[j]);
 	int lastIndex = -1;
@@ -296,8 +369,35 @@ void fixHoles(char **cata, int j, char* dir){
 		printf("changing %s to new target name: %s with dir = %s\n", cata[i], newFileName, dir);
 		renameFile(dir, cata[i], newFileName);
 		free(newFileName);
+		cata[i] = changeIndexNumber(cata[i], targetIndex, cata[0]);
+		ii = i;
 	}
+	cata[ii + 1] = NULL;
 }
+
+void fixSubHoles(char **cata, int *j, char *dir){
+	int currentIndex = -1;
+	int orginalIndex = -1;
+	int targetSubIndex;
+	
+	for(int i = 0; j[i] != -1; i++){
+		printf("this is j[%d]: %d\n", i ,j[i]);
+		printf("this is how many times the first for loop is running\n");
+		targetSubIndex = 1;
+		orginalIndex = getIndex(cata[j[i]]);
+		currentIndex = getIndex(cata[j[i]]);
+		for(int ii = j[i]; orginalIndex == currentIndex && cata[ii] != NULL; ii++){
+			printf("this is how many times the second for loop runs\n");
+			currentIndex = getIndex(cata[ii]);
+
+			printf("this is the orginal string %s this should be the changed string %s\n", cata[ii], changeSubIndexNumber(cata[ii], targetSubIndex, cata[0]));
+			renameFile(dir, cata[ii], changeSubIndexNumber(cata[ii], targetSubIndex, cata[0]));
+			targetSubIndex++;
+		}
+	}
+
+}
+
 
 
 int main(int argc, char* argv[]){
@@ -403,20 +503,35 @@ int main(int argc, char* argv[]){
 	//Detecting hole errors
 	int amountCatas = amountOfCatas(cataPtr);
 	if(conflictionCounter == 0){
+		int **subIndexHolesPtr;
+		subIndexHolesPtr = malloc(sizeof(int *) * amountCatas + 1);
 		int *holeIndexes;
 		holeIndexes = malloc(sizeof(int) * amountCatas + 1);
 		holeIndexes[amountCatas] = -1;
 		for(int i = 0; cataPtr[i] != NULL; i++){
-			holeIndexes[i] = indexHoles(cataPtr[i]);	
+			subIndexHolesPtr[i] = malloc(sizeof(int) * amountOfEntriesInCata(cataPtr[i]) + 1);
+			subIndexHolesPtr[i] = subIndexHoles(cataPtr[i]);
+			subIndexHolesPtr[i + 1] = NULL; 
+			holeIndexes[i] = indexHoles(cataPtr[i]);
 		}
 		for(int i = 0; i < amountCatas; i++){
 			if(holeIndexes[i] != -1){
-				printf("This is the index of a hole: %d in cata %s\n", holeIndexes[i], cataPtr[i][0]);
+				//printf("This is the index of a hole: %d in cata %s\n", holeIndexes[i], cataPtr[i][0]);
 				fixHoles(cataPtr[i], holeIndexes[i], dirname);
+				
 			}
+			if(subIndexHolesPtr[i] != NULL){
+				fixSubHoles(cataPtr[i], subIndexHolesPtr[i], dirname);
+			}
+			
 		}
+		printCataPtr(cataPtr);
 
 		free(holeIndexes);
+		for(int i = 0; i < amountCatas; i++){
+			free(subIndexHolesPtr[i]);
+		}
+		free(subIndexHolesPtr);
 	}	
 
 
