@@ -9,6 +9,7 @@ regex_t regex;
 
 int detectOnly = 0;
 int verbose = 0;
+int subHole = 0;
 
 int stringUnsortable(char* c){
 	return regexec( &regex, c, 0, NULL, 0) == 0 ? 0 : 1;
@@ -60,45 +61,6 @@ void printCataPtr(char*** cataPtr){
 	printf("\n");
 }
 
-int cataPtrEnd(char*** cataPtr){
-	if(cataPtr == NULL)
-		return 0;
-	int i = 0;
-	while(cataPtr[++i] != NULL)
-		;
-	return i;
-}
-
-int compareFunc(const void * a, const void * b){
-	int ai = 0;
-	int bi = 0;
-	while((*(char **)a)[ai] != '.')
-		ai++;
-	while((*(char **)b)[bi] != '.')
-		bi++;
-	if(ai > bi)
-		return 1;
-	if(bi > ai)
-		return 0;
-	for(int i = 0;i < ai; i++){
-		if((*(char **)a)[i] > (*(char **)b)[i])
-			return 1;
-		if((*(char **)b)[i] > (*(char **)a)[i])
-			return 0;
-	}
-	return 0;
-}
-
-int spaceBeforeIndex(char * a){
-	int i = 0;
-	while((a[i] >= 'a' && a[i] <= 'z') || (a[i] >= 'A' && a[i] <= 'Z'))
-		i++;
-	int ai = i;
-	while(a[ai] != '.')
-		ai++;
-	return ai;
-}
-
 int getIndex(char * a){
 	int i = 0;
 	while((a[i] >= 'a' && a[i] <= 'z') || (a[i] >= 'A' && a[i] <= 'Z'))
@@ -134,6 +96,59 @@ int getSubIndex(char * a){
 	free(astr);
 	return ans;
 }
+
+
+int cataPtrEnd(char*** cataPtr){
+	if(cataPtr == NULL)
+		return 0;
+	int i = 0;
+	while(cataPtr[++i] != NULL)
+		;
+	return i;
+}
+
+int compareFunc(const void * a, const void * b){
+	int ai = 0;
+	int bi = 0;
+	while((*(char **)a)[ai] != '.')
+		ai++;
+	while((*(char **)b)[bi] != '.')
+		bi++;
+	if(ai > bi)
+		return 1;
+	if(bi > ai)
+		return 0;
+	for(int i = 0;i < ai; i++){
+		if((*(char **)a)[i] > (*(char **)b)[i])
+			return 1;
+		if((*(char **)b)[i] > (*(char **)a)[i])
+			return 0;
+	}
+	int subIndexA = getSubIndex(*(char **)a);
+	int subIndexB = getSubIndex(*(char **)b);
+	if(subIndexA != -1 && subIndexB != -1){
+		return (subIndexA > subIndexB) ? 1 : 0;
+	}
+	else if(subIndexA != -1 && subIndexB == -1){
+		return 0;
+	}
+	else if(subIndexA == -1 && subIndexB != -1){
+		return 1;
+	}
+	return 0;
+}
+
+int spaceBeforeIndex(char * a){
+	int i = 0;
+	while((a[i] >= 'a' && a[i] <= 'z') || (a[i] >= 'A' && a[i] <= 'Z'))
+		i++;
+	int ai = i;
+	while(a[ai] != '.')
+		ai++;
+	return ai;
+}
+
+
 
 int amountOfEntriesInCata(char ** cata){
 	int i = 0;
@@ -393,7 +408,7 @@ void fixSubHoles(char **cata, int *j, char *dir){
 		currentIndex = getIndex(cata[j[i]]);
 		for(int ii = j[i]; orginalIndex == currentIndex && cata[ii] != NULL; ii++){
 			//printf("this is how many times the second for loop runs\n");
-			currentIndex = getIndex(cata[ii]);
+			currentIndex = getIndex(cata[ii + 1]);
 
 			printf("targetSubIndex: %d\n", targetSubIndex);
 			printf("this is the orginal string %s this should be the changed string %s\n", cata[ii], changeSubIndexNumber(cata[ii], targetSubIndex, cata[0]));
@@ -418,6 +433,9 @@ int main(int argc, char* argv[]){
 		}
 		if(strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0){
 			verbose = 1;
+		}
+		if(strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--subhole") == 0){
+			subHole = 1;
 		}
 	}
 	char dirname[2048];
@@ -526,32 +544,56 @@ int main(int argc, char* argv[]){
 	int numHoleErrors = 0;
 	int amountCatas = amountOfCatas(cataPtr);
 	if(conflictionCounter == 0){
+		int **subIndexHolesPtr;
+		subIndexHolesPtr = malloc(sizeof(int *) * amountCatas + 1);
 		if(verbose == 1){printf("No confliction errors detected, testing for holes...\n");}
-		//int **subIndexHolesPtr;
-		//subIndexHolesPtr = malloc(sizeof(int *) * amountCatas + 1);
 		int *holeIndexes;
 		holeIndexes = malloc(sizeof(int) * amountCatas + 1);
 		holeIndexes[amountCatas] = -1;
-		for(int i = 0; cataPtr[i] != NULL; i++){
-			//subIndexHolesPtr[i] = malloc(sizeof(int) * amountOfEntriesInCata(cataPtr[i]) + 1);
-			//subIndexHolesPtr[i] = subIndexHoles(cataPtr[i]);
-			//subIndexHolesPtr[i + 1] = NULL; 
-			holeIndexes[i] = indexHoles(cataPtr[i]);
-			if(holeIndexes[i] != -1)
-				numHoleErrors++;
+		if(subHole == 1){
+
+			for(int i = 0; cataPtr[i] != NULL; i++){
+				subIndexHolesPtr[i] = malloc(sizeof(int) * amountOfEntriesInCata(cataPtr[i]) + 1);
+				subIndexHolesPtr[i] = subIndexHoles(cataPtr[i]);
+				subIndexHolesPtr[i + 1] = NULL; 
+				holeIndexes[i] = indexHoles(cataPtr[i]);
+				if(holeIndexes[i] != -1)
+					numHoleErrors++;
+			}
+		}
+		else{
+			for(int i = 0; cataPtr[i] != NULL; i++){
+				holeIndexes[i] = indexHoles(cataPtr[i]);
+				if(holeIndexes[i] != -1)
+					numHoleErrors++;
+			}
 		}
 		if(detectOnly == 0){
-			for(int i = 0; i < amountCatas; i++){
-				if(holeIndexes[i] != -1){
-					//printf("This is the index of a hole: %d in cata %s\n", holeIndexes[i], cataPtr[i][0]);
-					fixHoles(cataPtr[i], holeIndexes[i], dirname);
+			if(subHole == 1){
+				for(int i = 0; i < amountCatas; i++){
+					if(holeIndexes[i] != -1){
+						//printf("This is the index of a hole: %d in cata %s\n", holeIndexes[i], cataPtr[i][0]);
+						fixHoles(cataPtr[i], holeIndexes[i], dirname);
+					
+					}
+					
+					if(subIndexHolesPtr[i] != NULL){
+						fixSubHoles(cataPtr[i], subIndexHolesPtr[i], dirname);
+					}
+				}
+				for(int i = 0; i < amountCatas; i++){
+					free(subIndexHolesPtr[i]);
+				}
+
+			}
+			else{
+				for(int i = 0; i < amountCatas; i++){
+					if(holeIndexes[i] != -1){
+						//printf("This is the index of a hole: %d in cata %s\n", holeIndexes[i], cataPtr[i][0]);
+						fixHoles(cataPtr[i], holeIndexes[i], dirname);
+					}
 				
 				}
-				/*
-				if(subIndexHolesPtr[i] != NULL){
-					fixSubHoles(cataPtr[i], subIndexHolesPtr[i], dirname);
-				}*/
-			
 			}
 		}
 		if(numHoleErrors == 0)
@@ -562,11 +604,7 @@ int main(int argc, char* argv[]){
 		}
 
 		free(holeIndexes);
-		/*
-		for(int i = 0; i < amountCatas; i++){
-			free(subIndexHolesPtr[i]);
-		}*/
-		//free(subIndexHolesPtr);
+		free(subIndexHolesPtr);
 	}
 
 
